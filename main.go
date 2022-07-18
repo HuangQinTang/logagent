@@ -1,40 +1,30 @@
 package main
 
 import (
-	"github.com/Shopify/sarama"
-	"log"
 	"logagent/conf"
+	"logagent/etcdservice"
 	"logagent/kafkaservice"
-	"logagent/tailservice"
+	"logagent/task"
 )
 
 // 日志收集客户端(收集指定目录下的日志文件，发送到kafka中)
-// 类似开源的项目还有filebeat
+// 类似开源的项目有filebeat
 func main() {
-	//1.读配置文件
+	//获取配置
 	cfg := conf.GetCfg()
 
-	//2.连接kafka
-	client := kafkaservice.InitProducer(cfg.Kafka.ProducerAddr)
-	defer client.Close()
-	msgChat := client.SendMes() //返回一个管道，往该管道发送的数据将存入kafka
+	//连接etcd
+	etcdCli := etcdservice.InitEtcdService(cfg.Etcd)
+	defer etcdCli.Close()
 
-	//3.获取tail对象(该对象可以读取日志文件)
-	tailObj := tailservice.InitTail(cfg.Collect)
+	//创建kafka生产者客户端
+	kafkaCli := kafkaservice.InitProducer(cfg.Kafka.ProducerAddr)
+	defer kafkaCli.Close()
 
-	//4.读取日志并发送到kafka
-	for {
-		line, ok := <-tailObj.Lines
-		if !ok { //读取错误
-			log.Printf("tail file close reopen, filename:%s\n", tailObj.Filename)
-			continue
-		}
-		msg := &sarama.ProducerMessage{
-			Topic: cfg.Kafka.LogTopic,
-			Value: sarama.StringEncoder(line.Text),
-		}
-		go func(msg *sarama.ProducerMessage) {
-			msgChat <- msg
-		}(msg)
+	//执行收集日志任务
+	t := task.Task{
+		EtcdClient:  etcdCli,
+		KafkaClient: kafkaCli,
 	}
+	t.Run()
 }

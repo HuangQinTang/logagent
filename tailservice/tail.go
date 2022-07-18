@@ -2,12 +2,10 @@ package tailservice
 
 import (
 	"github.com/hpcloud/tail"
-	"log"
-	"logagent/conf"
 )
 
 // InitTail 使用tail读取日志，返回tail对象
-func InitTail(config conf.Collect) *tail.Tail{
+func InitTail(path string) (*tail.Tail, error) {
 	cfg := tail.Config{
 		ReOpen:    true,                                 // 重新打开
 		Follow:    true,                                 // 是否跟随
@@ -16,9 +14,9 @@ func InitTail(config conf.Collect) *tail.Tail{
 		Poll:      true,
 	}
 
-	tailObj, err := tail.TailFile(config.LogfilePath, cfg)
+	tailObj, err := tail.TailFile(path, cfg)
 	if err != nil {
-		log.Fatalf("read %s failed err: %s", config.LogfilePath, err.Error())
+		return nil, err
 	}
-	return tailObj
+	return tailObj, nil
 }

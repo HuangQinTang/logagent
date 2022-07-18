@@ -1,17 +1,19 @@
 package conf
 
+import "time"
+
 type Config struct {
-	Kafka   Kafka   `ini:"kafka"`
-	Collect Collect `ini:"collect"`
+	Kafka Kafka `ini:"kafka"`
+	Etcd  Etcd  `ini:"etcd"`
 }
 
 // Kafka 配置
 type Kafka struct {
 	ProducerAddr []string `ini:"producerAddr"`
-	LogTopic     string   `ini:"logTopic"`
 }
 
-// Collect 日志收集配置
-type Collect struct {
-	LogfilePath string `ini:"logfilePath"` //收集日志的路径
+// Etcd 配置
+type Etcd struct {
+	Endpoints   []string      `ini:"endpoints"`
+	DialTimeout time.Duration `ini:"dialTimeout"`
 }

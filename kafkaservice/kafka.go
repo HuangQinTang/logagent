@@ -5,12 +5,8 @@ import (
 	"log"
 )
 
-type producer struct {
-	client sarama.SyncProducer
-}
-
 // InitProducer 初始化kafka生产者对象
-func InitProducer(addrs []string) *producer {
+func InitProducer(addrs []string) sarama.SyncProducer {
 	//1.生产者配置
 	cfg := sarama.NewConfig()
 	cfg.Producer.RequiredAcks = sarama.WaitForAll          //客户端,主分片,副本都分别ack
@@ -20,30 +16,7 @@ func InitProducer(addrs []string) *producer {
 	//2.链接kafka
 	client, err := sarama.NewSyncProducer(addrs, cfg)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatalf("connect kafka failed err: %s", err.Error())
 	}
-	p := new(producer)
-	p.client = client
-	return p
-}
-
-// Close 关闭生产者客户端
-func (p *producer) Close() {
-	p.Close()
-}
-
-// SendMes 向kafka发送消息
-func (p *producer) SendMes() chan<- *sarama.ProducerMessage {
-	msgChat := make(chan *sarama.ProducerMessage)
-	go func() {
-		for {
-			msg := <-msgChat
-			pid, offset, err := p.client.SendMessage(msg)
-			if err != nil {
-				log.Printf("message send failed err: %s", err.Error())
-			}
-			log.Printf("message send success pid: %v offset: %v\n", pid, offset)
-		}
-	}()
-	return msgChat
+	return client
 }
